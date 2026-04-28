@@ -4,17 +4,19 @@ cargo-ndk image changelog
 All user visible changes to this project will be documented in this file. This project uses [Semantic Versioning 2.0.0].
 
 
+## [4.1.3-ndkr29-rust1.94-r1] · 2026-04-28
+
+Bump
 
 
 ## main
 
 [Diff](/../../compare/4.1.2-ndkr29-rust1.94-r1...main)
 
+
 ### Security updated
 
 - [Debian Linux] "trixie" 20260406 (13.4): <https://github.com/docker-library/official-images/commit/14bc77db7b07b8b0321490adf7e9e152f940f802>
-
-
 
 
 ## [4.1.2-ndkr29-rust1.94-r1] · 2026-03-27
