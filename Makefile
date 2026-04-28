@@ -4,6 +4,9 @@
 
 comma := ,
 
+# Convert string to lowercase,  because my username has uppercase letters and I am not willing to change that
+tolower = $(shell echo $(1) | tr '[:upper:]' '[:lower:]')
+
 # Checks two given strings for equality.
 eq = $(if $(or $(1),$(2)),$(and $(findstring $(1),$(2)),\
                                 $(findstring $(2),$(1))),1)
@@ -25,7 +28,7 @@ BUILD_REV ?= $(strip \
 	$(shell grep 'ARG build_rev=' Dockerfile | cut -d '=' -f2))
 
 NAME := cargo-ndk
-OWNER := $(or $(GITHUB_REPOSITORY_OWNER),instrumentisto)
+OWNER := $(call tolower,$(or $(GITHUB_REPOSITORY_OWNER),instrumentisto))
 REGISTRIES := $(strip $(subst $(comma), ,\
 	$(shell grep -m1 'registry: \["' .github/workflows/ci.yml \
 	        | cut -d':' -f2 | tr -d '"][')))
@@ -88,7 +91,7 @@ docker.image:
 		--build-arg cargo_ndk_ver=$(CARGO_NDK_VER) \
 		--build-arg rust_ver=$(RUST_VER) \
 		--build-arg build_rev=$(BUILD_REV) \
-		--label org.opencontainers.image.source=$(github_url)/$(github_repo) \
+		--label org.opencontainers.image.source=$(github_url)/$(call tolower,$(github_repo)) \
 		--label org.opencontainers.image.revision=$(strip \
 			$(shell git show --pretty=format:%H --no-patch)) \
 		--label org.opencontainers.image.version=$(strip \
