@@ -122,8 +122,7 @@ jobs:
       # Skip if this is fork and no credentials are provided.
       - id: skip
         run: echo "no=${{ !(
-               github.repository_owner != 'instrumentisto'
-               && ((matrix.registry == 'quay.io'
+               ((matrix.registry == 'quay.io'
                     && secrets.QUAYIO_ROBOT_USER == '')
                 || (matrix.registry == 'docker.io'
                     && secrets.DOCKERHUB_BOT_USER == ''))
