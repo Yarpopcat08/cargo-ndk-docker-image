@@ -3,6 +3,10 @@ cargo-ndk image changelog
 
 All user visible changes to this project will be documented in this file. This project uses [Semantic Versioning 2.0.0].
 
+## [4.1.4-ndkr29-rust1.94-r1] · 2026-04-28
+
+I am rewriting this workflow file
+
 
 ## [4.1.3-ndkr29-rust1.94-r1] · 2026-04-28
 
