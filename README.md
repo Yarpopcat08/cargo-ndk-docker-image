@@ -14,11 +14,6 @@ cargo-ndk Docker image
 
 
 
-## Status
-
-__PROJECT IS CLOSED AND ARCHIVED. NO MAINTAINING WILL BE CONTINUED.__
-
-
 
 
 ## Supported tags and respective `Dockerfile` links
