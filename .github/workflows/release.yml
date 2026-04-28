@@ -1,0 +1,116 @@
+name: Release
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  ############
+  # Building #
+  ############
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: docker/setup-buildx-action@v4
+
+      - run: make docker.image no-cache=yes
+                  tag=build-${{ github.run_number }}
+
+      - run: make docker.tar to-file=.cache/image.tar
+                  tags=build-${{ github.run_number }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: image-${{ github.run_number }}
+          path: .cache/image.tar
+          retention-days: 1
+
+  ###########
+  # Testing #
+  ###########
+
+  test:
+    needs: ["build"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: make npm.install
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: image-${{ github.run_number }}
+          path: .cache/
+      - run: make docker.untar from-file=.cache/image.tar
+
+      - run: make test.docker
+                  tag=build-${{ github.run_number }}
+
+  #############
+  # Releasing #
+  #############
+
+  push:
+    needs: ["build", "test"]
+    strategy:
+      fail-fast: false
+      matrix:
+        registry: ["docker.io", "ghcr.io"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Parse Docker image name from Git repository name
+        id: image
+        uses: actions-ecosystem/action-regex-match@v2
+        with:
+          text: ${{ github.repository }}
+          regex: '^${{ github.repository_owner }}/(.+)-docker-image$'
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: image-${{ github.run_number }}
+          path: .cache/
+      - run: make docker.untar from-file=.cache/image.tar
+
+      - name: Login to ${{ matrix.registry }} container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ matrix.registry }}
+          username: ${{ (matrix.registry == 'docker.io'
+                         && secrets.DOCKERHUB_BOT_USER)
+                     || github.repository_owner }}
+          password: ${{ (matrix.registry == 'docker.io'
+                         && secrets.DOCKERHUB_BOT_PASS)
+                     || secrets.GITHUB_TOKEN }}
+
+      - name: Convert repository owner to lowercase for Docker tags
+        id: lowercase
+        run: echo "owner1=${OWNER,,}" >> $GITHUB_OUTPUT
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+      - run: make docker.tags of=build-${{ github.run_number }}
+                  registries=${{ matrix.registry }}
+                  owner=${{ github.repository_owner }}
+      - run: make docker.push
+                  registries=${{ matrix.registry }}
+                  owner=${{ github.repository_owner }}
+
+      # On GitHub Container Registry README is automatically updated on pushes.
+      - name: Update README on Docker Hub
+        uses: christian-korneck/update-container-description-action@v1
+        with:
+          provider: dockerhub
+          destination_container_repo: ${{ steps.lowercase.outputs.owner1 }}/${{ steps.image.outputs.group1 }}
+          readme_file: README.md
+        env:
+          DOCKER_USER: ${{ secrets.DOCKERHUB_BOT_USER }}
+          DOCKER_PASS: ${{ secrets.DOCKERHUB_BOT_PASS }}
+        if: ${{ matrix.registry == 'docker.io' }}
+
